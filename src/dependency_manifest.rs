@@ -60,24 +60,21 @@ mod tests {
 
     #[test]
     fn test_parse_dependency_manifest() {
-        let xml = r#"<DependencyManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" BaseUrl="https://cdn.unrealengine.com/dependencies">
+        let xml = r#"<DependencyManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" BaseUrl="https://example.com">
             <Files>
-                <File Name=".tgitconfig" Hash="8fa70533aa3bc6aee606776237b8d1b3ed16d315" />
-                <File Name="Engine/Binaries/DotNET/Android/UnrealAndroidFileTool/linux-x64/UnrealAndroidFileTool" Hash="c8214157f458f132d684e80eaa824e94a2c12a4d" IsExecutable="true" />
+                <File Name="file/name.one" Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" />
+                <File Name="file/name.two" Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" IsExecutable="true" />
             </Files>
             <Blobs>
-                <Blob Hash="0000171f05076eae0997dd93d592ec19e9fa4827" Size="589615" PackHash="12de9b5f80b252f1a94457c523985aeb4e15df51" PackOffset="1148624" />
+                <Blob Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" Size="123456" PackHash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" PackOffset="123456" />
             </Blobs>
             <Packs>
-                <Pack Hash="0007e862705001fbab3fcf58eb2b059da1e9f872" Size="2005632" CompressedSize="361451" RemotePath="UnrealEngine-25328963" />
+                <Pack Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" Size="123456" CompressedSize="361451" RemotePath="Remote-123456" />
             </Packs>
         </DependencyManifest>"#;
 
         let manifest = dependency_manifest(xml).unwrap().1;
-        assert_eq!(
-            manifest.base_url,
-            "https://cdn.unrealengine.com/dependencies"
-        );
+        assert_eq!(manifest.base_url, "https://example.com");
         assert_eq!(manifest.files.len(), 2);
         assert_eq!(manifest.blobs.len(), 1);
         assert_eq!(manifest.packs.len(), 1);
