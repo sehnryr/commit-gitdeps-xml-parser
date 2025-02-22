@@ -1,6 +1,9 @@
 mod parser;
 
 use nom::Parser;
+use nom::character::complete::multispace0;
+
+use parser::*;
 
 #[derive(Debug, PartialEq)]
 struct XmlHeader<'a> {
@@ -42,9 +45,9 @@ fn main() -> Result<(), std::io::Error> {
     let buffer = std::fs::read_to_string("Commit.gitdeps.xml")?;
 
     let (input, (_, _, (dependency_manifest, (files, _, blobs, _, packs)))) = (
-        xml_header!(),
-        whitespace!(),
-        dependency_manifest!((files!(), whitespace!(), blobs!(), whitespace!(), packs!())),
+        xml_header,
+        multispace0,
+        dependency_manifest((files, multispace0, blobs, multispace0, packs)),
     )
         .parse(&buffer)
         .unwrap();

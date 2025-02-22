@@ -1,82 +1,61 @@
-#[macro_export]
-macro_rules! pack {
-    () => {
-        ::nom::combinator::map(
-            (
-                ::nom::bytes::complete::tag::<&str, &str, ::nom::error::Error<&str>>("<Pack"),
-                crate::parser::common::whitespace!(1),
-                ::nom::sequence::delimited(
-                    ::nom::bytes::complete::tag("Hash=\""),
-                    crate::parser::common::hash!(),
-                    ::nom::character::complete::char('"'),
-                ),
-                crate::parser::common::whitespace!(1),
-                ::nom::sequence::delimited(
-                    ::nom::bytes::complete::tag("Size=\""),
-                    crate::parser::common::number!(),
-                    ::nom::character::complete::char('"'),
-                ),
-                crate::parser::common::whitespace!(1),
-                ::nom::sequence::delimited(
-                    ::nom::bytes::complete::tag("CompressedSize=\""),
-                    crate::parser::common::number!(),
-                    ::nom::character::complete::char('"'),
-                ),
-                crate::parser::common::whitespace!(1),
-                ::nom::sequence::delimited(
-                    ::nom::bytes::complete::tag("RemotePath=\""),
-                    ::nom::bytes::complete::is_not("\""),
-                    ::nom::character::complete::char('"'),
-                ),
-                crate::parser::common::whitespace!(),
-                ::nom::bytes::complete::tag("/>"),
-            ),
-            |(_, _, hash, _, size, _, compressed_size, _, remote_path, _, _)| crate::Pack {
-                hash,
-                size,
-                compressed_size,
-                remote_path,
-            },
-        )
-    };
+use nom::bytes::complete::{is_not, tag};
+use nom::character::complete::{char, multispace0, multispace1, u32};
+use nom::combinator::{map, opt};
+use nom::multi::fold_many0;
+use nom::sequence::delimited;
+use nom::{IResult, Parser};
+
+use crate::Pack;
+
+use super::hash;
+
+pub fn pack(input: &str) -> IResult<&str, Pack> {
+    map(
+        (
+            tag("<Pack"),
+            multispace1,
+            delimited(tag("Hash=\""), hash, char('"')),
+            multispace1,
+            delimited(tag("Size=\""), u32, char('"')),
+            multispace1,
+            delimited(tag("CompressedSize=\""), u32, char('"')),
+            multispace1,
+            delimited(tag("RemotePath=\""), is_not("\""), char('"')),
+            multispace0,
+            tag("/>"),
+        ),
+        |(_, _, hash, _, size, _, compressed_size, _, remote_path, _, _)| Pack {
+            hash,
+            size,
+            compressed_size,
+            remote_path,
+        },
+    )
+    .parse(input)
 }
 
-#[macro_export]
-macro_rules! packs {
-    () => {
-        ::nom::sequence::delimited(
-            (
-                ::nom::bytes::complete::tag("<Packs>"),
-                crate::parser::common::whitespace!(),
-            ),
-            ::nom::multi::fold_many0(
-                (crate::parser::pack!(), crate::parser::common::whitespace!()),
-                Vec::new,
-                |mut acc, (pack, _)| {
-                    acc.push(pack);
-                    acc
-                },
-            ),
-            ::nom::bytes::complete::tag("</Packs>"),
-        )
-    };
+pub fn packs(input: &str) -> IResult<&str, Vec<Pack>> {
+    delimited(
+        (tag("<Packs>"), multispace0),
+        fold_many0((pack, multispace0), Vec::new, |mut acc, (pack, _)| {
+            acc.push(pack);
+            acc
+        }),
+        tag("</Packs>"),
+    )
+    .parse(input)
 }
-
-pub use {pack, packs};
 
 #[cfg(test)]
 mod tests {
-    use nom::Parser;
-
     use super::*;
-    use crate::Pack;
 
     #[test]
     fn test_parse_pack() {
         let xml = r#"<Pack Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" Size="123456" CompressedSize="123456" RemotePath="Remote-123456" />"#;
 
         assert_eq!(
-            pack!().parse(xml),
+            pack(xml),
             Ok((
                 "",
                 Pack {
@@ -97,7 +76,7 @@ mod tests {
         </Packs>"#;
 
         assert_eq!(
-            packs!().parse(xml),
+            packs(xml),
             Ok((
                 "",
                 vec![

@@ -1,79 +1,76 @@
-#[macro_export]
-macro_rules! dependency_manifest {
-    ($f:expr) => {
-        ::nom::combinator::map(
-            (
-                ::nom::bytes::complete::tag::<&str, &str, ::nom::error::Error<&str>>(
-                    "<DependencyManifest",
-                ),
-                crate::parser::common::whitespace!(1),
-                ::nom::sequence::delimited(
-                    ::nom::bytes::complete::tag("xmlns:xsd=\""),
-                    ::nom::bytes::complete::is_not("\""),
-                    ::nom::character::complete::char('"'),
-                ),
-                crate::parser::common::whitespace!(1),
-                ::nom::sequence::delimited(
-                    ::nom::bytes::complete::tag("xmlns:xsi=\""),
-                    ::nom::bytes::complete::is_not("\""),
-                    ::nom::character::complete::char('"'),
-                ),
-                crate::parser::common::whitespace!(1),
-                ::nom::sequence::delimited(
-                    ::nom::bytes::complete::tag("BaseUrl=\""),
-                    ::nom::bytes::complete::is_not("\""),
-                    ::nom::character::complete::char('"'),
-                ),
-                crate::parser::common::whitespace!(),
-                ::nom::character::complete::char('>'),
-                crate::parser::common::whitespace!(),
-                $f,
-                crate::parser::common::whitespace!(),
-                ::nom::bytes::complete::tag("</DependencyManifest>"),
-            ),
-            |(
-                _,
-                _,
-                xml_schema_definition_namespace,
-                _,
-                xml_schema_instance_namespace,
-                _,
-                base_url,
-                _,
-                _,
-                _,
-                f,
-                _,
-                _,
-            )| {
-                (
-                    crate::DependencyManifest {
-                        xml_schema_definition_namespace,
-                        xml_schema_instance_namespace,
-                        base_url,
-                    },
-                    f,
-                )
-            },
-        )
-    };
-}
+use nom::bytes::complete::{is_not, tag};
+use nom::character::complete::{char, multispace0, multispace1};
+use nom::combinator::{map, opt};
+use nom::error::Error;
+use nom::multi::fold_many0;
+use nom::sequence::delimited;
+use nom::{IResult, Parser};
 
-pub use dependency_manifest;
+use crate::DependencyManifest;
+
+use super::hash;
+
+pub fn dependency_manifest<'a, O, F>(
+    inner: F,
+) -> impl Parser<&'a str, Output = (DependencyManifest<'a>, O), Error = Error<&'a str>>
+where
+    F: Parser<&'a str, Output = O, Error = Error<&'a str>>,
+{
+    map(
+        (
+            tag("<DependencyManifest"),
+            multispace1,
+            delimited(tag("xmlns:xsd=\""), is_not("\""), char('"')),
+            multispace1,
+            delimited(tag("xmlns:xsi=\""), is_not("\""), char('"')),
+            multispace1,
+            delimited(tag("BaseUrl=\""), is_not("\""), char('"')),
+            multispace0,
+            char('>'),
+            multispace0,
+            inner,
+            multispace0,
+            tag("</DependencyManifest>"),
+        ),
+        |(
+            _,
+            _,
+            xml_schema_definition_namespace,
+            _,
+            xml_schema_instance_namespace,
+            _,
+            base_url,
+            _,
+            _,
+            _,
+            inner,
+            _,
+            _,
+        )| {
+            (
+                DependencyManifest {
+                    xml_schema_definition_namespace,
+                    xml_schema_instance_namespace,
+                    base_url,
+                },
+                inner,
+            )
+        },
+    )
+}
 
 #[cfg(test)]
 mod tests {
     use nom::Parser;
 
     use super::*;
-    use crate::DependencyManifest;
 
     #[test]
     fn test_parse_dependency_manifest() {
         let xml = r#"<DependencyManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" BaseUrl="https://example.com"></DependencyManifest>"#;
 
         assert_eq!(
-            dependency_manifest!(crate::parser::common::whitespace!()).parse(xml),
+            dependency_manifest(multispace0).parse(xml),
             Ok((
                 "",
                 (
