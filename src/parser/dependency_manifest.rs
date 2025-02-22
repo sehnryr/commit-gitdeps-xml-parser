@@ -6,7 +6,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::DependencyManifest;
+use crate::model::DependencyManifest;
 
 use super::hash;
 
@@ -48,11 +48,11 @@ where
             _,
         )| {
             (
-                DependencyManifest {
+                DependencyManifest::new(
                     xml_schema_definition_namespace,
                     xml_schema_instance_namespace,
                     base_url,
-                },
+                ),
                 inner,
             )
         },
@@ -74,11 +74,11 @@ mod tests {
             Ok((
                 "",
                 (
-                    DependencyManifest {
-                        xml_schema_definition_namespace: "http://www.w3.org/2001/XMLSchema",
-                        xml_schema_instance_namespace: "http://www.w3.org/2001/XMLSchema-instance",
-                        base_url: "https://example.com",
-                    },
+                    DependencyManifest::new(
+                        "http://www.w3.org/2001/XMLSchema",
+                        "http://www.w3.org/2001/XMLSchema-instance",
+                        "https://example.com",
+                    ),
                     ""
                 )
             ))

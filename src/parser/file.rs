@@ -5,7 +5,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::File;
+use crate::model::File;
 
 use super::hash;
 
@@ -21,11 +21,7 @@ pub fn file(input: &str) -> IResult<&str, File> {
             multispace0,
             tag("/>"),
         ),
-        |(_, _, name, _, hash, is_executable, _, _)| File {
-            name,
-            hash,
-            is_executable: is_executable.is_some(),
-        },
+        |(_, _, name, _, hash, is_executable, _, _)| File::new(name, hash, is_executable.is_some()),
     )
     .parse(input)
 }
@@ -55,11 +51,11 @@ mod tests {
             file(xml),
             Ok((
                 "",
-                File {
-                    name: "file/name.one",
-                    hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                    is_executable: false,
-                }
+                File::new(
+                    "file/name.one",
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    false
+                )
             ))
         );
 
@@ -68,11 +64,11 @@ mod tests {
             file(xml),
             Ok((
                 "",
-                File {
-                    name: "file/name.two",
-                    hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                    is_executable: true,
-                }
+                File::new(
+                    "file/name.two",
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    true,
+                )
             ))
         );
     }
@@ -89,16 +85,16 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    File {
-                        name: "file/name.one",
-                        hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        is_executable: false,
-                    },
-                    File {
-                        name: "file/name.two",
-                        hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        is_executable: true,
-                    },
+                    File::new(
+                        "file/name.one",
+                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                        false,
+                    ),
+                    File::new(
+                        "file/name.two",
+                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                        true,
+                    ),
                 ]
             ))
         );

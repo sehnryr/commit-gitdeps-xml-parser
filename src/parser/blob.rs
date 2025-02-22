@@ -5,7 +5,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::Blob;
+use crate::model::Blob;
 
 use super::hash;
 
@@ -24,11 +24,8 @@ pub fn blob(input: &str) -> IResult<&str, Blob> {
             multispace0,
             tag("/>"),
         ),
-        |(_, _, hash, _, size, _, pack_hash, _, pack_offset, _, _)| Blob {
-            hash,
-            size,
-            pack_hash,
-            pack_offset,
+        |(_, _, hash, _, size, _, pack_hash, _, pack_offset, _, _)| {
+            Blob::new(hash, size, pack_hash, pack_offset)
         },
     )
     .parse(input)
@@ -62,12 +59,12 @@ mod tests {
             blob.parse(xml),
             Ok((
                 "",
-                Blob {
-                    hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                    size: 123456,
-                    pack_hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                    pack_offset: 123456,
-                }
+                Blob::new(
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    123456,
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    123456,
+                )
             ))
         );
     }
@@ -84,18 +81,18 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    Blob {
-                        hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        size: 123456,
-                        pack_hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        pack_offset: 123456,
-                    },
-                    Blob {
-                        hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        size: 123456,
-                        pack_hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        pack_offset: 123456,
-                    },
+                    Blob::new(
+                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                        123456,
+                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                        123456,
+                    ),
+                    Blob::new(
+                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                        123456,
+                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                        123456,
+                    ),
                 ]
             ))
         );

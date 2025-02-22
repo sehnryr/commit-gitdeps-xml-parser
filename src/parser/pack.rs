@@ -5,7 +5,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::Pack;
+use crate::model::Pack;
 
 use super::hash;
 
@@ -24,11 +24,8 @@ pub fn pack(input: &str) -> IResult<&str, Pack> {
             multispace0,
             tag("/>"),
         ),
-        |(_, _, hash, _, size, _, compressed_size, _, remote_path, _, _)| Pack {
-            hash,
-            size,
-            compressed_size,
-            remote_path,
+        |(_, _, hash, _, size, _, compressed_size, _, remote_path, _, _)| {
+            Pack::new(hash, size, compressed_size, remote_path)
         },
     )
     .parse(input)
@@ -58,12 +55,12 @@ mod tests {
             pack(xml),
             Ok((
                 "",
-                Pack {
-                    hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                    size: 123456,
-                    compressed_size: 123456,
-                    remote_path: "Remote-123456",
-                }
+                Pack::new(
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    123456,
+                    123456,
+                    "Remote-123456",
+                )
             ))
         );
     }
@@ -80,18 +77,18 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    Pack {
-                        hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        size: 123456,
-                        compressed_size: 123456,
-                        remote_path: "Remote-123456",
-                    },
-                    Pack {
-                        hash: "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        size: 123456,
-                        compressed_size: 123456,
-                        remote_path: "Remote-123456",
-                    },
+                    Pack::new(
+                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                        123456,
+                        123456,
+                        "Remote-123456",
+                    ),
+                    Pack::new(
+                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                        123456,
+                        123456,
+                        "Remote-123456",
+                    ),
                 ]
             ))
         );
