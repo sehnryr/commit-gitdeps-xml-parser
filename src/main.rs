@@ -23,15 +23,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file_path_str = args.file().to_str().ok_or("File not found")?;
     let file_name = args.file().file_name().ok_or("File name not found")?;
 
-    let url = git_deps
-        .get_file_url(file_path_str)
-        .ok_or("File not found")?;
+    let file = git_deps.get_file(file_path_str).unwrap();
+
+    let url = git_deps.get_file_url(&file).ok_or("File not found")?;
 
     let mut output_file = OpenOptions::new()
         .write(true)
         .create(true)
         .open(file_name)
         .await?;
+
+    if file.is_executable() {
+        #[cfg(target_os = "linux")]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            let metadata = output_file.metadata().await?;
+            let mut permissions = metadata.permissions();
+
+            permissions.set_mode(permissions.mode() | 0o100);
+
+            output_file.set_permissions(permissions).await?;
+        }
+    }
 
     let response = reqwest::get(url).await?;
     let byte_stream = response

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod blob;
 mod dependency_manifest;
 mod file;

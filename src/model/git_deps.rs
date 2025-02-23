@@ -3,7 +3,7 @@ use nom::character::complete::multispace0;
 
 use crate::parser::*;
 
-use super::{BlobMap, DependencyManifest, FileMap, PackMap};
+use super::{BlobMap, DependencyManifest, File, FileMap, PackMap};
 
 pub struct GitDeps<'a> {
     dependency_manifest: DependencyManifest<'a>,
@@ -29,8 +29,11 @@ impl<'a> GitDeps<'a> {
         })
     }
 
-    pub fn get_file_url(&self, file_name: &str) -> Option<String> {
-        let file = self.files.get(file_name)?;
+    pub fn get_file(&self, file_name: &'a str) -> Option<File<'a>> {
+        self.files.get(file_name)
+    }
+
+    pub fn get_file_url(&self, file: &File<'a>) -> Option<String> {
         let blob = self.blobs.get(file.hash())?;
         let pack = self.packs.get(blob.pack_hash())?;
 
