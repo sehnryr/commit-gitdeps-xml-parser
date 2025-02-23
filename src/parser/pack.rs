@@ -7,7 +7,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::model::{Pack, PackKey, PackValue};
+use crate::model::{Pack, PackMap};
 
 use super::hash;
 
@@ -33,12 +33,11 @@ pub fn pack(input: &str) -> IResult<&str, Pack> {
     .parse(input)
 }
 
-pub fn packs(input: &str) -> IResult<&str, HashMap<PackKey, PackValue>> {
+pub fn packs(input: &str) -> IResult<&str, PackMap> {
     delimited(
         (tag("<Packs>"), multispace0),
-        fold_many0((pack, multispace0), HashMap::new, |mut acc, (pack, _)| {
-            let (key, value) = pack.into_key_value();
-            acc.insert(key, value);
+        fold_many0((pack, multispace0), PackMap::new, |mut acc, (pack, _)| {
+            acc.insert(pack);
             acc
         }),
         tag("</Packs>"),
@@ -78,15 +77,19 @@ mod tests {
         assert_eq!(
             packs(xml),
             Ok(("", {
-                let mut pack_map = HashMap::new();
-                pack_map.insert(
-                    PackKey::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4"),
-                    PackValue::new(123456, 123456, "Remote-123456"),
-                );
-                pack_map.insert(
-                    PackKey::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5"),
-                    PackValue::new(123456, 123456, "Remote-123456"),
-                );
+                let mut pack_map = PackMap::new();
+                pack_map.insert(Pack::new(
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    123456,
+                    123456,
+                    "Remote-123456",
+                ));
+                pack_map.insert(Pack::new(
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5",
+                    123456,
+                    123456,
+                    "Remote-123456",
+                ));
                 pack_map
             }))
         );

@@ -7,7 +7,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::model::{File, FileKey, FileValue};
+use crate::model::{File, FileMap};
 
 use super::hash;
 
@@ -28,12 +28,11 @@ pub fn file(input: &str) -> IResult<&str, File> {
     .parse(input)
 }
 
-pub fn files(input: &str) -> IResult<&str, HashMap<FileKey, FileValue>> {
+pub fn files(input: &str) -> IResult<&str, FileMap> {
     delimited(
         (tag("<Files>"), multispace0),
-        fold_many0((file, multispace0), HashMap::new, |mut acc, (file, _)| {
-            let (key, value) = file.into_key_value();
-            acc.insert(key, value);
+        fold_many0((file, multispace0), FileMap::new, |mut acc, (file, _)| {
+            acc.insert(file);
             acc
         }),
         tag("</Files>"),
@@ -86,15 +85,17 @@ mod tests {
         assert_eq!(
             files(xml),
             Ok(("", {
-                let mut file_map = HashMap::new();
-                file_map.insert(
-                    FileKey::new("file/name.one"),
-                    FileValue::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4", false),
-                );
-                file_map.insert(
-                    FileKey::new("file/name.two"),
-                    FileValue::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4", true),
-                );
+                let mut file_map = FileMap::new();
+                file_map.insert(File::new(
+                    "file/name.one",
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    false,
+                ));
+                file_map.insert(File::new(
+                    "file/name.two",
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    true,
+                ));
                 file_map
             }))
         );

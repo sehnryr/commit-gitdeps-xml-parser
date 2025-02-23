@@ -7,7 +7,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::model::{Blob, BlobKey, BlobValue};
+use crate::model::{Blob, BlobMap};
 
 use super::hash;
 
@@ -33,12 +33,11 @@ pub fn blob(input: &str) -> IResult<&str, Blob> {
     .parse(input)
 }
 
-pub fn blobs(input: &str) -> IResult<&str, HashMap<BlobKey, BlobValue>> {
+pub fn blobs(input: &str) -> IResult<&str, BlobMap> {
     delimited(
         (tag("<Blobs>"), multispace0),
-        fold_many0((blob, multispace0), HashMap::new, |mut acc, (blob, _)| {
-            let (key, value) = blob.into_key_value();
-            acc.insert(key, value);
+        fold_many0((blob, multispace0), BlobMap::new, |mut acc, (blob, _)| {
+            acc.insert(blob);
             acc
         }),
         (tag("</Blobs>"), multispace0),
@@ -78,15 +77,19 @@ mod tests {
         assert_eq!(
             blobs.parse(xml),
             Ok(("", {
-                let mut blob_map = HashMap::new();
-                blob_map.insert(
-                    BlobKey::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4"),
-                    BlobValue::new(123456, "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4", 123456),
-                );
-                blob_map.insert(
-                    BlobKey::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5"),
-                    BlobValue::new(123456, "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5", 123456),
-                );
+                let mut blob_map = BlobMap::new();
+                blob_map.insert(Blob::new(
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    123456,
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+                    123456,
+                ));
+                blob_map.insert(Blob::new(
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5",
+                    123456,
+                    "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5",
+                    123456,
+                ));
                 blob_map
             }))
         );

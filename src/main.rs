@@ -7,7 +7,6 @@ use nom::Parser as NomParser;
 use nom::character::complete::multispace0;
 
 use crate::args::Args;
-use crate::model::FileKey;
 use crate::parser::*;
 
 fn main() -> Result<(), std::io::Error> {
@@ -23,7 +22,7 @@ fn main() -> Result<(), std::io::Error> {
         .parse(&buffer)
         .unwrap();
 
-    let file = files.get(&FileKey::new(args.file().to_str().unwrap_or_default()));
+    let file = files.get(args.file().to_str().unwrap_or_default());
 
     println!("{:?}", file);
 

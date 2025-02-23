@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug, PartialEq)]
 pub struct File<'a> {
     name: &'a str,
@@ -25,53 +27,46 @@ impl<'a> File<'a> {
     pub fn is_executable(&self) -> bool {
         self.is_executable
     }
-
-    pub fn into_key_value(self) -> (FileKey<'a>, FileValue<'a>) {
-        (
-            FileKey { name: self.name },
-            FileValue {
-                hash: self.hash,
-                is_executable: self.is_executable,
-            },
-        )
-    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct FileKey<'a> {
+struct FileKey<'a> {
     name: &'a str,
 }
 
-impl<'a> FileKey<'a> {
-    pub fn new(name: &'a str) -> Self {
-        Self { name }
-    }
-
-    pub fn name(&self) -> &str {
-        self.name
-    }
-}
-
 #[derive(Debug, PartialEq)]
-pub struct FileValue<'a> {
+struct FileValue<'a> {
     hash: &'a str,
     is_executable: bool,
 }
 
-impl<'a> FileValue<'a> {
-    #[cfg(test)]
-    pub fn new(hash: &'a str, is_executable: bool) -> Self {
+#[derive(Debug, PartialEq)]
+pub struct FileMap<'a> {
+    inner: HashMap<FileKey<'a>, FileValue<'a>>,
+}
+
+impl<'a> FileMap<'a> {
+    pub fn new() -> Self {
         Self {
-            hash,
-            is_executable,
+            inner: HashMap::new(),
         }
     }
 
-    pub fn hash(&self) -> &str {
-        self.hash
+    pub fn insert(&mut self, file: File<'a>) {
+        self.inner.insert(
+            FileKey { name: file.name },
+            FileValue {
+                hash: file.hash,
+                is_executable: file.is_executable,
+            },
+        );
     }
 
-    pub fn is_executable(&self) -> bool {
-        self.is_executable
+    pub fn get(&self, name: &'a str) -> Option<File<'a>> {
+        self.inner.get(&FileKey { name }).map(|value| File {
+            name,
+            hash: value.hash,
+            is_executable: value.is_executable,
+        })
     }
 }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug, PartialEq)]
 pub struct Blob<'a> {
     hash: &'a str,
@@ -31,60 +33,49 @@ impl<'a> Blob<'a> {
     pub fn pack_offset(&self) -> u32 {
         self.pack_offset
     }
-
-    pub fn into_key_value(self) -> (BlobKey<'a>, BlobValue<'a>) {
-        (
-            BlobKey { hash: self.hash },
-            BlobValue {
-                size: self.size,
-                pack_hash: self.pack_hash,
-                pack_offset: self.pack_offset,
-            },
-        )
-    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct BlobKey<'a> {
+struct BlobKey<'a> {
     hash: &'a str,
 }
 
-impl<'a> BlobKey<'a> {
-    pub fn new(hash: &'a str) -> Self {
-        Self { hash }
-    }
-
-    pub fn hash(&self) -> &str {
-        self.hash
-    }
-}
-
 #[derive(Debug, PartialEq)]
-pub struct BlobValue<'a> {
+struct BlobValue<'a> {
     size: u32,
     pack_hash: &'a str,
     pack_offset: u32,
 }
 
-impl<'a> BlobValue<'a> {
-    #[cfg(test)]
-    pub fn new(size: u32, pack_hash: &'a str, pack_offset: u32) -> Self {
+#[derive(Debug, PartialEq)]
+pub struct BlobMap<'a> {
+    inner: HashMap<BlobKey<'a>, BlobValue<'a>>,
+}
+
+impl<'a> BlobMap<'a> {
+    pub fn new() -> Self {
         Self {
-            size,
-            pack_hash,
-            pack_offset,
+            inner: HashMap::new(),
         }
     }
 
-    pub fn size(&self) -> u32 {
-        self.size
+    pub fn insert(&mut self, blob: Blob<'a>) {
+        self.inner.insert(
+            BlobKey { hash: blob.hash },
+            BlobValue {
+                size: blob.size,
+                pack_hash: blob.pack_hash,
+                pack_offset: blob.pack_offset,
+            },
+        );
     }
 
-    pub fn pack_hash(&self) -> &str {
-        self.pack_hash
-    }
-
-    pub fn pack_offset(&self) -> u32 {
-        self.pack_offset
+    pub fn get(&self, hash: &'a str) -> Option<Blob<'a>> {
+        self.inner.get(&BlobKey { hash }).map(|value| Blob {
+            hash,
+            size: value.size,
+            pack_hash: value.pack_hash,
+            pack_offset: value.pack_offset,
+        })
     }
 }
