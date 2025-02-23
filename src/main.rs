@@ -2,11 +2,12 @@ mod args;
 mod model;
 mod parser;
 
-use std::fs::OpenOptions;
-use std::io::Write;
-
+use async_compression::tokio::bufread::GzipDecoder;
 use clap::Parser as ClapParser;
-use flate2::write::GzDecoder;
+use futures_util::TryStreamExt;
+use tokio::fs::OpenOptions;
+use tokio::io;
+use tokio_util::io::StreamReader;
 
 use crate::args::Args;
 use crate::model::GitDeps;
@@ -26,17 +27,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .get_file_url(file_path_str)
         .ok_or("File not found")?;
 
-    let response = reqwest::get(url).await?;
-    let compressed = response.bytes().await?;
-
-    let output_file = OpenOptions::new()
+    let mut output_file = OpenOptions::new()
         .write(true)
         .create(true)
-        .open(file_name)?;
+        .open(file_name)
+        .await?;
 
-    let mut decoder = GzDecoder::new(output_file);
-    decoder.write_all(&compressed)?;
-    decoder.finish()?;
+    let response = reqwest::get(url).await?;
+    let byte_stream = response
+        .bytes_stream()
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e));
+
+    let stream_reader = StreamReader::new(byte_stream);
+    let buf_reader = io::BufReader::new(stream_reader);
+
+    let mut decoder = GzipDecoder::new(buf_reader);
+
+    io::copy(&mut decoder, &mut output_file).await?;
 
     Ok(())
 }
