@@ -10,7 +10,7 @@ pub struct Args {
 
     /// File to download
     #[arg(short, long)]
-    file: PathBuf,
+    file: String,
 }
 
 impl Args {
@@ -18,7 +18,7 @@ impl Args {
         &self.xml_path
     }
 
-    pub fn file(&self) -> &PathBuf {
+    pub fn file(&self) -> &str {
         &self.file
     }
 }
