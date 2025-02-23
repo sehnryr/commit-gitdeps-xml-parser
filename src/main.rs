@@ -21,7 +21,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let git_deps = GitDeps::new(&buffer).unwrap();
 
     let file_path_str = args.file().to_str().ok_or("File not found")?;
-    let file_name = args.file().file_name().ok_or("File name not found")?;
+    let file_name = args
+        .output_dir()
+        .join(args.file().file_name().ok_or("File name not found")?);
 
     let file = git_deps.get_file(file_path_str).unwrap();
 

@@ -11,6 +11,10 @@ pub struct Args {
     /// File to download
     #[arg(short, long)]
     file: PathBuf,
+
+    /// Output directory
+    #[arg(short, long, default_value = ".")]
+    output_dir: PathBuf,
 }
 
 impl Args {
@@ -20,5 +24,9 @@ impl Args {
 
     pub fn file(&self) -> &PathBuf {
         &self.file
+    }
+
+    pub fn output_dir(&self) -> &PathBuf {
+        &self.output_dir
     }
 }
