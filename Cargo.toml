@@ -5,4 +5,15 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.30", features = ["derive"] }
+flate2 = "1.0.35"
 nom = "8.0.0"
+reqwest = { version = "0.12.12", default-features = false, features = [
+    "rustls-tls",
+    "charset",
+    "http2",
+    "macos-system-configuration",
+] }
+tokio = { version = "1.43.0", default-features = false, features = [
+    "rt-multi-thread",
+    "macros",
+] }
