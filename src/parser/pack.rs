@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use nom::bytes::complete::{is_not, tag};
 use nom::character::complete::{char, multispace0, multispace1, u32};
 use nom::combinator::{map, opt};
@@ -5,7 +7,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::model::Pack;
+use crate::model::{Pack, PackKey, PackValue};
 
 use super::hash;
 
@@ -31,11 +33,12 @@ pub fn pack(input: &str) -> IResult<&str, Pack> {
     .parse(input)
 }
 
-pub fn packs(input: &str) -> IResult<&str, Vec<Pack>> {
+pub fn packs(input: &str) -> IResult<&str, HashMap<PackKey, PackValue>> {
     delimited(
         (tag("<Packs>"), multispace0),
-        fold_many0((pack, multispace0), Vec::new, |mut acc, (pack, _)| {
-            acc.push(pack);
+        fold_many0((pack, multispace0), HashMap::new, |mut acc, (pack, _)| {
+            let (key, value) = pack.into_key_value();
+            acc.insert(key, value);
             acc
         }),
         tag("</Packs>"),
@@ -69,28 +72,23 @@ mod tests {
     fn test_parse_packs() {
         let xml = r#"<Packs>
             <Pack Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" Size="123456" CompressedSize="123456" RemotePath="Remote-123456" />
-            <Pack Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" Size="123456" CompressedSize="123456" RemotePath="Remote-123456" />
+            <Pack Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5" Size="123456" CompressedSize="123456" RemotePath="Remote-123456" />
         </Packs>"#;
 
         assert_eq!(
             packs(xml),
-            Ok((
-                "",
-                vec![
-                    Pack::new(
-                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        123456,
-                        123456,
-                        "Remote-123456",
-                    ),
-                    Pack::new(
-                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        123456,
-                        123456,
-                        "Remote-123456",
-                    ),
-                ]
-            ))
+            Ok(("", {
+                let mut pack_map = HashMap::new();
+                pack_map.insert(
+                    PackKey::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4"),
+                    PackValue::new(123456, 123456, "Remote-123456"),
+                );
+                pack_map.insert(
+                    PackKey::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5"),
+                    PackValue::new(123456, 123456, "Remote-123456"),
+                );
+                pack_map
+            }))
         );
     }
 }

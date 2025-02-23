@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use nom::bytes::complete::{is_not, tag};
 use nom::character::complete::{char, multispace0, multispace1};
 use nom::combinator::{map, opt};
@@ -5,7 +7,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::model::File;
+use crate::model::{File, FileKey, FileValue};
 
 use super::hash;
 
@@ -26,11 +28,12 @@ pub fn file(input: &str) -> IResult<&str, File> {
     .parse(input)
 }
 
-pub fn files(input: &str) -> IResult<&str, Vec<File>> {
+pub fn files(input: &str) -> IResult<&str, HashMap<FileKey, FileValue>> {
     delimited(
         (tag("<Files>"), multispace0),
-        fold_many0((file, multispace0), Vec::new, |mut acc, (file, _)| {
-            acc.push(file);
+        fold_many0((file, multispace0), HashMap::new, |mut acc, (file, _)| {
+            let (key, value) = file.into_key_value();
+            acc.insert(key, value);
             acc
         }),
         tag("</Files>"),
@@ -82,21 +85,18 @@ mod tests {
 
         assert_eq!(
             files(xml),
-            Ok((
-                "",
-                vec![
-                    File::new(
-                        "file/name.one",
-                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        false,
-                    ),
-                    File::new(
-                        "file/name.two",
-                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        true,
-                    ),
-                ]
-            ))
+            Ok(("", {
+                let mut file_map = HashMap::new();
+                file_map.insert(
+                    FileKey::new("file/name.one"),
+                    FileValue::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4", false),
+                );
+                file_map.insert(
+                    FileKey::new("file/name.two"),
+                    FileValue::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4", true),
+                );
+                file_map
+            }))
         );
     }
 }

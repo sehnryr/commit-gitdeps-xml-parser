@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use nom::bytes::complete::{is_not, tag};
 use nom::character::complete::{char, multispace0, multispace1, u32};
 use nom::combinator::{map, opt};
@@ -5,7 +7,7 @@ use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::{IResult, Parser};
 
-use crate::model::Blob;
+use crate::model::{Blob, BlobKey, BlobValue};
 
 use super::hash;
 
@@ -31,17 +33,14 @@ pub fn blob(input: &str) -> IResult<&str, Blob> {
     .parse(input)
 }
 
-pub fn blobs(input: &str) -> IResult<&str, Vec<Blob>> {
+pub fn blobs(input: &str) -> IResult<&str, HashMap<BlobKey, BlobValue>> {
     delimited(
         (tag("<Blobs>"), multispace0),
-        ::nom::multi::fold_many0(
-            (crate::parser::blob, multispace0),
-            Vec::new,
-            |mut acc, (blob, _)| {
-                acc.push(blob);
-                acc
-            },
-        ),
+        fold_many0((blob, multispace0), HashMap::new, |mut acc, (blob, _)| {
+            let (key, value) = blob.into_key_value();
+            acc.insert(key, value);
+            acc
+        }),
         (tag("</Blobs>"), multispace0),
     )
     .parse(input)
@@ -73,28 +72,23 @@ mod tests {
     fn test_parse_blobs() {
         let xml = r#"<Blobs>
             <Blob Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" Size="123456" PackHash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" PackOffset="123456" />
-            <Blob Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" Size="123456" PackHash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4" PackOffset="123456" />
+            <Blob Hash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5" Size="123456" PackHash="a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5" PackOffset="123456" />
         </Blobs>"#;
 
         assert_eq!(
             blobs.parse(xml),
-            Ok((
-                "",
-                vec![
-                    Blob::new(
-                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        123456,
-                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        123456,
-                    ),
-                    Blob::new(
-                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        123456,
-                        "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
-                        123456,
-                    ),
-                ]
-            ))
+            Ok(("", {
+                let mut blob_map = HashMap::new();
+                blob_map.insert(
+                    BlobKey::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4"),
+                    BlobValue::new(123456, "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4", 123456),
+                );
+                blob_map.insert(
+                    BlobKey::new("a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5"),
+                    BlobValue::new(123456, "a3f5b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a5", 123456),
+                );
+                blob_map
+            }))
         );
     }
 }
