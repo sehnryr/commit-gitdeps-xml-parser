@@ -1,7 +1,7 @@
 [package]
-name = "commit-gitdeps-xml-parser"
+name = "ue-gitdeps"
 authors = ["Youn Mélois <youn@melois.dev>"]
-repository = "https://github.com/sehnryr/commit-gitdeps-xml-parser/"
+repository = "https://github.com/sehnryr/ue-gitdeps/"
 description = "Parse Commit.gitdeps.xml from Unreal Engine and download its files"
 version = "0.1.0"
 edition = "2024"
